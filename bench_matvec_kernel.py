@@ -1,4 +1,5 @@
 import argparse
+import gc
 import os
 import time
 
@@ -100,13 +101,14 @@ if __name__ == "__main__":
         np.random.seed(seed)
         torch.random.manual_seed(seed)
 
-        NUM_RUNS = 2000
+        NUM_RUNS = 4096
         WARMUP = 10
 
         device = torch.device("cuda")
 
         for m in [4096, 11008]:
             for n in [4096, 11008]:
+                gc.collect()
                 d = torch.zeros((m, n), dtype=torch.float16, device=device)
                 x = torch.zeros(n, dtype=torch.float16, device=device)
                 y, dense_runs = torch_mul_timer_runs(d, x, NUM_RUNS)
@@ -132,9 +134,9 @@ if __name__ == "__main__":
         f.write("Layer;Tensor Name;M;N;Sparsity (%)")
 
         for method in [FeatureFlags.TORCH_FP16] + methods:
-            f.write(f";{method.pretty()} (ms)")
+            f.write(f";{method.pretty()} CSR (ms)")
 
-        f.write(f";{method.pretty()} Modified CSR (ms)")
+        f.write(f";{method.pretty()} PTCSR (ms)")
 
         f.write("\n")
 

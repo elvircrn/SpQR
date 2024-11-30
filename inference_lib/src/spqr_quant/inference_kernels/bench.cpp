@@ -140,14 +140,50 @@ int main() {
   auto d_x = device_from_size<uint16_t>(XY_SIZE);
   auto d_y = device_from_size<uint16_t>(XY_SIZE);
   const std::vector<std::string> &layer_names{
-      "mlp.down_proj",    "mlp.gate_proj",    "mlp.up_proj",
-      "self_attn.k_proj", "self_attn.o_proj", "self_attn.q_proj",
-      "self_attn.v_proj"};
+      "self_attn.k_proj",
+      // "mlp.down_proj",
+    // "mlp.gate_proj",
+    // "mlp.up_proj",
+    // "self_attn.o_proj",
+    // "self_attn.q_proj",
+      // "self_attn.v_proj"
+
+  };
 
   auto measurements = new float[NUM_REPS];
 
   float mean_runtime = 0.f;
   int tests{};
+
+
+
+  for (int i = 0; i < num_layers; i++) {
+    for (const auto &layer_name : layer_names) {
+      std::string quant_linear_path =
+          "/home/elvircrn/CLionProjects/spqr_kernel/data/"
+          "output_identity_compressed_libtorch/" +
+          std::to_string(i) + "/" + layer_name + "/";
+
+      std::string quant_linear_path_ptcsr =
+          "/home/elvircrn/CLionProjects/spqr_kernel/data/"
+          "output_identity_compressed_ptcsr_libtorch/" +
+          std::to_string(i) + "/" + layer_name + "/";
+
+      QuantizedLinear quantized_linear = from_path(quant_linear_path);
+      [[maybe_unused]] auto result =
+          mul_with_time(quantized_linear, d_x, d_y, measurements, NUM_REPS);
+
+      QuantizedLinear quantized_linear_ptcsr =
+          from_path(quant_linear_path_ptcsr);
+      [[maybe_unused]] auto result_ptcsr = mul_with_time(quantized_linear_ptcsr, d_x, d_y,
+                                        measurements, NUM_REPS);
+
+      quantized_linear.free();
+      quantized_linear_ptcsr.free();
+    }
+  }
+
+  printf("Finished warming up\n");
 
   for (int i = 0; i < num_layers; i++) {
     for (const auto &layer_name : layer_names) {

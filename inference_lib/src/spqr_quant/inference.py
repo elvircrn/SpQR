@@ -376,8 +376,8 @@ class FeatureFlags(IntEnum):
 
     def pretty(self):
         if self.value == FeatureFlags.TORCH_FP16:
-            return "Torch FP16"
+            return "PyTorch"
         elif self.value == FeatureFlags.SPARSE_FUSED_FP32:
-            return "Sparse Fused FP32"
+            return "SpQR"
         else:
             raise "Prettify not found for value {self.value}"
