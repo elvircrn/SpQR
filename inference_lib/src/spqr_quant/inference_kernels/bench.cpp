@@ -132,7 +132,7 @@ QuantizedLinear from_path(const std::string &base_path) {
 }
 
 int main() {
-  std::string tag = "baseline_csr_v3";
+  std::string tag = "INTR";
   std::ofstream results("results.txt", std::ios_base::app);
   static constexpr int XY_SIZE = 11008 * 3;
   static constexpr int NUM_REPS = 512;
@@ -141,12 +141,12 @@ int main() {
   auto d_y = device_from_size<uint16_t>(XY_SIZE);
   const std::vector<std::string> &layer_names{
       "self_attn.k_proj",
-      // "mlp.down_proj",
-    // "mlp.gate_proj",
-    // "mlp.up_proj",
-    // "self_attn.o_proj",
-    // "self_attn.q_proj",
-      // "self_attn.v_proj"
+      "mlp.down_proj",
+    "mlp.gate_proj",
+    "mlp.up_proj",
+    "self_attn.o_proj",
+    "self_attn.q_proj",
+      "self_attn.v_proj"
 
   };
 
@@ -186,6 +186,7 @@ int main() {
   printf("Finished warming up\n");
 
   for (int i = 0; i < num_layers; i++) {
+    i = 10;
     for (const auto &layer_name : layer_names) {
       std::string quant_linear_path =
           "/home/elvircrn/CLionProjects/spqr_kernel/data/"
@@ -217,6 +218,7 @@ int main() {
       quantized_linear.free();
       quantized_linear_ptcsr.free();
     }
+    break;
   }
 
   results << std::left << std::setw(16) << tag << " " << (mean_runtime / tests)
@@ -226,3 +228,25 @@ int main() {
 
   return 0;
 }
+
+/*
+Shared Memory
+K         0.032
+Down            0.0778
+Gate            0.0786
+Up              0.0788
+O         0.0348
+Q         0.0339
+V         0.0328
+
+
+__int2half Intrinsic
+K         0.0358
+Down            0.087
+Gate            0.0891
+Up              0.087
+O         0.038
+Q         0.0376
+V         0.0358
+*/
+
