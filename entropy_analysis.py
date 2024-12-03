@@ -96,7 +96,6 @@ if __name__ == "__main__":
 
                 if first:
                     first = False
-                    print("tensor;nnz;sparsity;mean;variance;outlier_threshold;compression_rate")
                 counts = counts.float() / counts.sum()
                 if "q_proj" in tensor_path:
                     print(
