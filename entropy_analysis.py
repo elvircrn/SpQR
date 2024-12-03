@@ -5,7 +5,11 @@ import sys
 if __name__ == '__main__':
     base_path = sys.argv[1]
     print('tensor;nnz;sparsity;mean;variance;outlier_threshold')
-    for outlier_threshold in os.listdir(base_path):
+
+    outlier_thresholds = os.listdir(base_path)
+    outlier_thresholds = sorted(outlier_thresholds)
+
+    for outlier_threshold in outlier_thresholds:
         for t_name in os.listdir(os.path.join(base_path, outlier_threshold, '0')):
             tensor_path = os.path.join(base_path, outlier_threshold, '0', t_name)
             # print(f'tensor_path = {tensor_path}')
