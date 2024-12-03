@@ -78,28 +78,36 @@ if __name__ == "__main__":
 
     outlier_thresholds = sorted(os.listdir(base_path))
 
-    for outlier_threshold in outlier_thresholds:
-        outlier_path = os.path.join(base_path, outlier_threshold, "0")
-        if not os.path.isdir(outlier_path):
-            continue
+    for matrix in [
+                    'down_proj',
+                    'gate_proj',
+                    'up_proj',
+                    'k_proj',
+                    'o_proj',
+                    'q_proj',
+                    'v_proj'
+    ]:
+        for outlier_threshold in outlier_thresholds:
+            outlier_path = os.path.join(base_path, outlier_threshold, "0")
+            if not os.path.isdir(outlier_path):
+                continue
+            for t_name in os.listdir(outlier_path):
+                tensor_path = os.path.join(outlier_path, t_name)
+                if os.path.isfile(tensor_path):
+                    t = torch.load(tensor_path, map_location="cpu")
+                    W = t["quant_weights"]
+                    m, n = W.shape[0], W.shape[1]
+                    W = flatten_tensor(W)
+                    values, counts = torch.unique(W, return_counts=True)
+                    nnz = t["outliers_matrix"].to_sparse_csr().values().shape[0]
 
-        for t_name in os.listdir(outlier_path):
-            tensor_path = os.path.join(outlier_path, t_name)
-            if os.path.isfile(tensor_path):
-                t = torch.load(tensor_path, map_location="cpu")
-                W = t["quant_weights"]
-                m, n = W.shape[0], W.shape[1]
-                W = flatten_tensor(W)
-                values, counts = torch.unique(W, return_counts=True)
-                nnz = t["outliers_matrix"].to_sparse_csr().values().shape[0]
-
-                if first:
-                    first = False
-                    print("tensor;nnz;sparsity;mean;variance;outlier_threshold;compression_rate")
-                counts = counts.float() / counts.sum()
-                if "q_proj" in tensor_path:
-                    print(
-                        f"{os.path.basename(tensor_path)};{nnz};{1 - nnz / (m * n):.6f};"
-                        f"{torch.mean(counts):.4f};{torch.var(counts):.4f};{outlier_threshold};"
-                        f"{estimate_compression_rate(counts, W.int())}"
-                    )
+                    if first:
+                        first = False
+                        print("tensor;nnz;sparsity;mean;variance;outlier_threshold;compression_rate")
+                    counts = counts.float() / counts.sum()
+                    if matrix in tensor_path:
+                        print(
+                            f"{os.path.basename(tensor_path)};{nnz};{1 - nnz / (m * n):.6f};"
+                            f"{torch.mean(counts):.4f};{torch.var(counts):.4f};{outlier_threshold};"
+                            f"{estimate_compression_rate(counts, W.int())}"
+                        )
