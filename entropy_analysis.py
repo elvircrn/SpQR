@@ -10,7 +10,6 @@ if __name__ == '__main__':
             print(f'tensor_path = {tensor_path}')
             if os.path.isfile(tensor_path):
                 t = torch.load(tensor_path, map_location='cpu')
-                print(t.keys())
                 W = t['quant_weights']
                 m = W.shape[0]
                 n = W.shape[1]
