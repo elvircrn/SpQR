@@ -2,20 +2,14 @@ import torch
 import os
 import sys
 
-def estimate_compression_rate(frequencies, sequence):
-    # Calculate entropy
-    entropy = -torch.sum(frequencies * torch.log2(frequencies))
+from huffmancodec import HuffmanCodec
 
-    # Count symbol occurrences in the sequence
-    unique, counts = torch.unique(sequence, return_counts=True)
-    probabilities = counts.float() / counts.sum()
 
-    # Average code length for the sequence
-    average_code_length = -torch.sum(probabilities * torch.log2(frequencies[unique]))
-
-    # Compression rate is the ratio of entropy to average code length
-    compression_rate = entropy / average_code_length
-    return compression_rate
+def estimate_compression_rate(sequence):
+    data = sequence.tolist()
+    codec = HuffmanCodec.from_data(data)
+    compressed = codec.encode(data)
+    return sequence.shape[0] / len(compressed)
 
 
 def flatten_tensor(W):
@@ -26,6 +20,7 @@ def flatten_tensor(W):
         return W.flatten()
     else:
         return torch.cat(W).flatten()
+
 
 if __name__ == '__main__':
     base_path = sys.argv[1]
@@ -53,4 +48,5 @@ if __name__ == '__main__':
                 counts = counts.float() / counts.float().sum()
                 # print(f'Tensor {t_name} stats\nnnz = {nnz}\n:counts = {counts}\nmean = {torch.mean(counts)}\nvariance = {torch.var(counts)}')
                 if 'q_proj' in tensor_path:
-                    print(f'{os.path.basename(tensor_path)};{nnz};{1 - nnz / (m * n)};{torch.mean(counts):.4f};{torch.var(counts):.4f};{outlier_threshold};{estimate_compression_rate(counts, W.int())}')
+                    print(
+                        f'{os.path.basename(tensor_path)};{nnz};{1 - nnz / (m * n)};{torch.mean(counts):.4f};{torch.var(counts):.4f};{outlier_threshold};{estimate_compression_rate(W.int())}')
