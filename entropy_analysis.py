@@ -1,3 +1,7 @@
+import torch
+import os
+import sys
+
 import heapq
 
 class Node:
@@ -41,6 +45,7 @@ def huffman_from_frequencies(frequencies):
     huffman_table = generate_huffman_codes(tree)
 
     return huffman_table
+
 
 def estimate_compression_rate(freq, sequence):
     freq = {i: f for i, f in enumerate(freq)}
