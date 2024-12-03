@@ -5,7 +5,7 @@ import sys
 if __name__ == '__main__':
     base_path = sys.argv[1]
     for p in os.listdir(base_path):
-        for t in os.listdir(os.path.join(base_path, p)):
+        for t in os.listdir(os.path.join(base_path, p, '0')):
             tensor_path = os.path.join(base_path, p, t)
             print(f'tensor_path = {tensor_path}')
             if os.path.isfile(tensor_path):
