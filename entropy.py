@@ -593,7 +593,7 @@ if __name__ == "__main__":
     down = 0.01
     steps = 14
     with open(os.path.join(args.save, 'stats.csv'), 'w') as file:
-        file.write('tensor_name;sparsity;compression;0;1;2;3;4;5;6;7')
+        file.write('tensor_name;sparsity;compression;0;1;2;3;4;5;6;7\n')
 
     for i in range(steps):
         outlier_threshold = down + ((up - down) / steps) * i
