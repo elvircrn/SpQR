@@ -6,7 +6,7 @@ if __name__ == '__main__':
     base_path = sys.argv[1]
     for p in os.listdir(base_path):
         for t in os.listdir(os.path.join(base_path, p)):
-            if os.path.isfile(t):
+            if os.path.isfile(os.path.join(base_path, p, t)):
                 t = torch.load(os.path.join(base_path, p, t))
                 W = t['quant_weights']
                 m = W.shape[0]
