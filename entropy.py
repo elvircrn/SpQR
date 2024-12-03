@@ -588,7 +588,7 @@ if __name__ == "__main__":
     up = 0.45
     down = 0.1
     steps = 10
-    with open(os.path.join(args.save, 'stats.csv'), 'a') as file:
+    with open(os.path.join(args.save, 'stats.csv'), 'w') as file:
         file.write('tensor_name;sparsity;compression;0;1;2;3;4;5;6;7')
 
     for i in range(steps):
