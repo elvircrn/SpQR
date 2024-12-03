@@ -50,7 +50,7 @@ def huffman_from_frequencies(frequencies):
 def estimate_compression_rate(freq, sequence):
     freq = {i: f for i, f in enumerate(freq)}
 
-    return huffman_from_frequencies(freq, 3)['compression_ratio']
+    return huffman_from_frequencies(freq)['compression_ratio']
 
 
 def flatten_tensor(W):
