@@ -185,7 +185,7 @@ def quantize_sparsity(model, dataloader, args, device, outlier_threshold):
     normal_outlier_count_global, w_count_global = 0, 0
 
     layers = get_layers(model)
-    for i in [10]:
+    for i in [0, 10]:
         print(f"\n---------------- Layer {i} of {len(layers)} ----------------")
         normal_outlier_count, w_count = 0, 0
         stats_payload = {}
@@ -588,9 +588,9 @@ if __name__ == "__main__":
 
     base_path = args.save
     os.makedirs(base_path, exist_ok=True)
-    up = 0.45
-    down = 0.1
-    steps = 10
+    up = 0.7
+    down = 0.01
+    steps = 14
     with open(os.path.join(args.save, 'stats.csv'), 'w') as file:
         file.write('tensor_name;sparsity;compression;0;1;2;3;4;5;6;7')
 
