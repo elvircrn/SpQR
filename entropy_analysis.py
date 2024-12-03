@@ -41,7 +41,7 @@ def generate_huffman_codes(node, current_code="", codes=None):
     return codes
 
 def huffman_from_frequencies(frequencies, input_bits_per_symbol):
-    initial_bits = sum(frequencies[symbol] * input_bits_per_symbol for symbol in frequencies)
+    initial_bits = sum(frequencies[symbol] * input_bits_per_symbol for symbol in range(2 ** input_bits_per_symbol))
 
     tree = build_huffman_tree(frequencies)
     codes = generate_huffman_codes(tree)
