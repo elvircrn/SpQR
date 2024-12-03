@@ -257,7 +257,7 @@ def quantize_sparsity(model, dataloader, args, device, outlier_threshold):
                     full_path = os.path.join(save, str(i))
                     os.makedirs(full_path, exist_ok=True)
                     sublayer_path = os.path.join(full_path, sublayer_name)
-                    torch.save(quantized.save_quant_dict, full_path + sublayer_name)
+                    torch.save(quantized.save_quant_dict, sublayer_path)
 
                 spqr_handlers[sublayer_name].layer.weight.data = quantized.weight.to(
                     spqr_handlers[sublayer_name].layer.weight.data.dtype
