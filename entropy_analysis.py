@@ -46,6 +46,8 @@ def huffman_from_frequencies(frequencies, input_bits_per_symbol):
     tree = build_huffman_tree(frequencies)
     codes = generate_huffman_codes(tree)
 
+    print(f'codes = {codes}')
+
     compressed_bits = sum(frequencies[symbol] * len(codes[symbol]) for symbol in frequencies)
 
     return {
