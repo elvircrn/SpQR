@@ -2,8 +2,7 @@ import torch
 import os
 import sys
 
-from huffmancodec import HuffmanCodec
-
+from dahuffman import HuffmanCodec
 
 def estimate_compression_rate(sequence):
     data = sequence.tolist()
