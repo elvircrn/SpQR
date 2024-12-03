@@ -8,7 +8,7 @@ if __name__ == '__main__':
     for p in os.listdir(base_path):
         for t_name in os.listdir(os.path.join(base_path, p, '0')):
             tensor_path = os.path.join(base_path, p, '0', t_name)
-            print(f'tensor_path = {tensor_path}')
+            # print(f'tensor_path = {tensor_path}')
             if os.path.isfile(tensor_path):
                 t = torch.load(tensor_path, map_location='cpu')
                 W = t['quant_weights']
