@@ -310,36 +310,16 @@ def quantize_sparsity(model, dataloader, args, device, outlier_threshold):
     print("=====================\nFinal stats:")
     print(f"global_ol_share:  {normal_outlier_count_global / w_count_global:.3%}")
 
-    wbits_avg = get_average_number_of_bits(
-        wbits=args.wbits,
-        qq_scale_bits=args.qq_scale_bits,
-        qq_zero_bits=args.qq_zero_bits,
-        qqq_scale_bits=16,
-        qqq_zero_bits=16,
-        groupsize=args.groupsize,
-        qq_groupsize=args.qq_groupsize,
-        round_zero=args.round_zero,
-        global_ol_n_share=normal_outlier_count_global / w_count_global,
-    )
     if save:
         torch.save(vars(args), save + "/args.pt")
         already_saved_weights = set()
         for name, layer in nn.ModuleList(get_layers(model)).named_modules():
             if isinstance(layer, (nn.Conv2d, nn.Linear)):
                 already_saved_weights.add(layer.weight)
-        not_quantized_weights = {
-            name: param for name, param in model.named_parameters() if param not in already_saved_weights
-        }
-        torch.save(not_quantized_weights, save + "/not_quantized_weights.pt")
-
-    if args.wandb:
-        wandb.log({"outlier_share": normal_outlier_count_global / w_count_global})
-        wandb.log({"wbits_avg": wbits_avg})
-        wandb.log({"max_cuda_mem_quantize": round(torch.cuda.max_memory_allocated() / 1e9, 2)})
 
     model.config.use_cache = use_cache
     print(f"quantize: {torch.cuda.max_memory_allocated()=:,}")
-    return quantizers, wbits_avg
+    return quantizers
 
 
 @torch.no_grad()
