@@ -274,7 +274,8 @@ def quantize_sparsity(model, dataloader, args, device, outlier_threshold):
 
                     compression_rate = float(int(compression_rate * 1000)) / 1000
                     with open(os.path.join(save, 'stats.csv'), 'a') as file:
-                        file.write(f"{os.path.basename(sublayer_path)};{(1 - nnz / (m * n)):.4f};{compression_rate};{';'.join(map(str, counts.tolist()))}\n")
+                        tensor_name = os.path.basename(sublayer_path)
+                        file.write(f"{i}.{tensor_name};{(1 - nnz / (m * n)):.4f};{compression_rate};{';'.join(map(str, counts.tolist()))}\n")
 
 
                 spqr_handlers[sublayer_name].layer.weight.data = quantized.weight.to(
