@@ -7,7 +7,7 @@ def estimate_compression_rate(frequencies, sequence):
     entropy = -torch.sum(frequencies * torch.log2(frequencies))
 
     # Count symbol occurrences in the sequence
-    unique, counts = torch.unique(torch.tensor(sequence), return_counts=True)
+    unique, counts = torch.unique(sequence, return_counts=True)
     probabilities = counts.float() / counts.sum()
 
     # Average code length for the sequence
@@ -17,6 +17,15 @@ def estimate_compression_rate(frequencies, sequence):
     compression_rate = entropy / average_code_length
     return compression_rate
 
+
+def flatten_tensor(W):
+    """
+    @return: Utility function: flattens the input tensor.
+    """
+    if torch.is_tensor(W):
+        return W.flatten()
+    else:
+        return torch.cat(W).flatten()
 
 if __name__ == '__main__':
     base_path = sys.argv[1]
@@ -31,7 +40,7 @@ if __name__ == '__main__':
             # print(f'tensor_path = {tensor_path}')
             if os.path.isfile(tensor_path):
                 t = torch.load(tensor_path, map_location='cpu')
-                W = t['quant_weights']
+                W = flatten_tensor(t['quant_weights'])
                 m = W.shape[0]
                 n = W.shape[1]
                 values, counts = torch.unique(W, return_counts=True)
