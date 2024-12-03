@@ -67,7 +67,7 @@ def calculate_compression_ratio(input_sequence, code_table, input_bits_per_symbo
 
 
 def estimate_compression_rate(counts, sequence):
-    return torch.tensor([4, 4, 3, 2, 2, 3, 4, 4], dtype=torch.float).dot(counts).sum() / 3
+    return 3 / torch.tensor([4, 4, 3, 2, 2, 3, 4, 4], dtype=torch.float).dot(counts).sum()
 
 
 if __name__ == "__main__":
