@@ -6,8 +6,10 @@ if __name__ == '__main__':
     base_path = sys.argv[1]
     for p in os.listdir(base_path):
         for t in os.listdir(os.path.join(base_path, p)):
-            if os.path.isfile(os.path.join(base_path, p, t)):
-                t = torch.load(os.path.join(base_path, p, t))
+            tensor_path = os.path.join(base_path, p, t)
+            print(f'tensor_path = {tensor_path}')
+            if os.path.isfile(tensor_path):
+                t = torch.load(tensor_path, map_location='cpu')
                 print(t.keys())
                 W = t['quant_weights']
                 m = W.shape[0]
