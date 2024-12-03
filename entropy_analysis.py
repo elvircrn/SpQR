@@ -18,4 +18,5 @@ if __name__ == '__main__':
                 nnz = t["outliers_matrix"].to_sparse_csr().values().shape[0]
                 counts = counts.float() / counts.float().sum()
                 # print(f'Tensor {t_name} stats\nnnz = {nnz}\n:counts = {counts}\nmean = {torch.mean(counts)}\nvariance = {torch.var(counts)}')
-                print(f'{os.path.basename(tensor_path)};{nnz};{1 - nnz / (m * n)};{torch.mean(counts)};{torch.var(counts)}')
+                if 'q_proj' in tensor_path:
+                    print(f'{os.path.basename(tensor_path)};{nnz};{1 - nnz / (m * n)};{torch.mean(counts)};{torch.var(counts)}')
