@@ -4,12 +4,10 @@ import sys
 
 from dahuffman import HuffmanCodec
 
-def estimate_compression_rate(sequence):
-    data = sequence.tolist()
-    codec = HuffmanCodec.from_data(data)
+def estimate_compression_rate(freq, sequence):
+    codec = HuffmanCodec.from_frequencies(freq)
     codec.print_code_table()
-    compressed = codec.encode(data)
-    return sequence.shape[0] / len(compressed)
+    return sequence.shape[0]
 
 
 def flatten_tensor(W):
@@ -49,4 +47,4 @@ if __name__ == '__main__':
                 # print(f'Tensor {t_name} stats\nnnz = {nnz}\n:counts = {counts}\nmean = {torch.mean(counts)}\nvariance = {torch.var(counts)}')
                 if 'q_proj' in tensor_path:
                     print(
-                        f'{os.path.basename(tensor_path)};{nnz};{1 - nnz / (m * n)};{torch.mean(counts):.4f};{torch.var(counts):.4f};{outlier_threshold};{estimate_compression_rate(W.int())}')
+                        f'{os.path.basename(tensor_path)};{nnz};{1 - nnz / (m * n)};{torch.mean(counts):.4f};{torch.var(counts):.4f};{outlier_threshold};{estimate_compression_rate(counts, W.int())}')
