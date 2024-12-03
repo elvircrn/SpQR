@@ -591,6 +591,7 @@ if __name__ == "__main__":
     base_path = args.save
     os.makedirs(base_path, exist_ok=True)
     for id, outlier_threshold in enumerate([0.05, 0.01, 0.015, 0.02, 0.025]):
-        p = os.path.join(base_path, outlier_threshold)
+        p = os.path.join(base_path, str(outlier_threshold))
         os.makedirs(p, exist_ok=True)
+        args.save = p
         quantize_sparsity(model, args, device, outlier_threshold)
