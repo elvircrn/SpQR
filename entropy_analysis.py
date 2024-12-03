@@ -4,6 +4,7 @@ import sys
 
 if __name__ == '__main__':
     base_path = sys.argv[1]
+    print('tensor;nnz;sparsity;mean;variance')
     for p in os.listdir(base_path):
         for t_name in os.listdir(os.path.join(base_path, p, '0')):
             tensor_path = os.path.join(base_path, p, '0', t_name)
@@ -16,4 +17,5 @@ if __name__ == '__main__':
                 values, counts = torch.unique(W, return_counts=True)
                 nnz = t["outliers_matrix"].to_sparse_csr().values().shape[0]
                 counts = counts.float() / counts.float().sum()
-                print(f'Tensor {t_name} stats\nnnz = {nnz}\n:counts = {counts}\nmean = {torch.mean(counts)}\nvariance = {torch.var(counts)}')
+                # print(f'Tensor {t_name} stats\nnnz = {nnz}\n:counts = {counts}\nmean = {torch.mean(counts)}\nvariance = {torch.var(counts)}')
+                print(f'{os.path.basename(tensor_path)};{nnz};{1 - nnz / (m * n)};{torch.mean(counts)};{torch.var(counts)}')
