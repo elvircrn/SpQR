@@ -575,8 +575,11 @@ if __name__ == "__main__":
 
     base_path = args.save
     os.makedirs(base_path, exist_ok=True)
-    for i in range(40):
-        outlier_threshold = i * 0.005 + 0.0350
+    up = 0.45
+    down = 0.1
+    steps = 10
+    for i in range(steps):
+        outlier_threshold = down + ((up - down) / steps) * i
         p = os.path.join(base_path, f'{outlier_threshold:.4f}')
         os.makedirs(p, exist_ok=True)
         args.save = p
