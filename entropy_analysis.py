@@ -1,7 +1,3 @@
-import torch
-import os
-import sys
-
 import heapq
 
 class Node:
@@ -40,22 +36,11 @@ def generate_huffman_codes(node, current_code="", codes=None):
             generate_huffman_codes(node.right, current_code + "1", codes)
     return codes
 
-def huffman_from_frequencies(frequencies, input_bits_per_symbol):
-    initial_bits = sum(frequencies[symbol] * input_bits_per_symbol for symbol in frequencies)
-
+def huffman_from_frequencies(frequencies):
     tree = build_huffman_tree(frequencies)
-    codes = generate_huffman_codes(tree)
+    huffman_table = generate_huffman_codes(tree)
 
-    print(f'codes = {codes}')
-
-    compressed_bits = sum(frequencies[symbol] * len(codes[symbol]) for symbol in frequencies)
-
-    return {
-        "huffman_table": codes,
-        "initial_bits": initial_bits,
-        "compressed_bits": compressed_bits,
-        "compression_ratio": initial_bits / compressed_bits if compressed_bits > 0 else float('inf')
-    }
+    return huffman_table
 
 def estimate_compression_rate(freq, sequence):
     freq = {i: f for i, f in enumerate(freq)}
