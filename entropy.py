@@ -269,9 +269,10 @@ def quantize_sparsity(model, dataloader, args, device, outlier_threshold):
                     values, counts = torch.unique(quantized.save_quant_dict['quant_weights'], return_counts=True)
                     counts = counts.float() / counts.float().sum()
                     compression_rate = -3 / torch.dot(torch.sort(-counts.cpu())[0], torch.tensor([2, 2, 3, 3, 4, 4, 4, 4], dtype=torch.float))
+                    print(f'Counts of tensor {sublayer_path}\n:counts = {counts}\nmean = {torch.mean(counts)}\nvariance = {torch.var(counts)}')
+                    counts = (counts * 1000).int().float() / 1000
                     with open(os.path.join(save, 'stats.csv'), 'a') as file:
                         file.write(f"{os.path.basename(sublayer_path)};{(1 - nnz / (m * n)):.4f};{compression_rate};{';'.join(map(str, counts.tolist()))}\n")
-                    print(f'Counts of tensor {sublayer_path}\n:counts = {counts}\nmean = {torch.mean(counts)}\nvariance = {torch.var(counts)}')
 
 
                 spqr_handlers[sublayer_name].layer.weight.data = quantized.weight.to(
