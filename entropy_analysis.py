@@ -3,9 +3,18 @@ import os
 import sys
 
 def estimate_compression_rate(frequencies):
+    # Calculate entropy
     entropy = -torch.sum(frequencies * torch.log2(frequencies))
-    average_length = torch.ceil(entropy)
-    return entropy / average_length
+
+    # The expected code length is typically close to entropy for Huffman coding
+    # For simplicity, we can estimate the compression rate as entropy divided by the number of bits for raw encoding (log2 of the number of symbols)
+    num_symbols = len(frequencies)
+    average_code_length = torch.ceil(entropy)  # This would approximate the average Huffman code length
+
+    # Compression rate is the ratio of entropy to average code length
+    compression_rate = entropy / torch.log2(torch.tensor(num_symbols, dtype=torch.float32))
+    return compression_rate
+
 
 
 if __name__ == '__main__':
