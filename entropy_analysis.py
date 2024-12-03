@@ -2,13 +2,61 @@ import torch
 import os
 import sys
 
-from dahuffman import HuffmanCodec
+import heapq
+
+class Node:
+    def __init__(self, symbol=None, freq=0):
+        self.symbol = symbol
+        self.freq = freq
+        self.left = None
+        self.right = None
+
+    def __lt__(self, other):
+        return self.freq < other.freq
+
+def build_huffman_tree(frequencies):
+    heap = [Node(symbol, freq) for symbol, freq in frequencies.items()]
+    heapq.heapify(heap)
+
+    while len(heap) > 1:
+        left = heapq.heappop(heap)
+        right = heapq.heappop(heap)
+        merged = Node(freq=left.freq + right.freq)
+        merged.left = left
+        merged.right = right
+        heapq.heappush(heap, merged)
+
+    return heap[0]
+
+def generate_huffman_codes(node, current_code="", codes=None):
+    if codes is None:
+        codes = {}
+    if node.symbol is not None:
+        codes[node.symbol] = current_code
+    else:
+        if node.left:
+            generate_huffman_codes(node.left, current_code + "0", codes)
+        if node.right:
+            generate_huffman_codes(node.right, current_code + "1", codes)
+    return codes
+
+def huffman_from_frequencies(frequencies, input_bits_per_symbol):
+    initial_bits = sum(frequencies[symbol] * input_bits_per_symbol for symbol in frequencies)
+
+    tree = build_huffman_tree(frequencies)
+    codes = generate_huffman_codes(tree)
+
+    compressed_bits = sum(frequencies[symbol] * len(codes[symbol]) for symbol in frequencies)
+
+    return {
+        "huffman_table": codes,
+        "initial_bits": initial_bits,
+        "compressed_bits": compressed_bits,
+        "compression_ratio": initial_bits / compressed_bits if compressed_bits > 0 else float('inf')
+    }
 
 def estimate_compression_rate(freq, sequence):
-    freq = {i: f for i, f in enumerate(freq)}
-    codec = HuffmanCodec.from_frequencies(freq)
-    codec.print_code_table()
-    return sequence.shape[0]
+    return huffman_from_frequencies(freq, 3)['compression_ratio']
 
 
 def flatten_tensor(W):
