@@ -2,19 +2,20 @@ import torch
 import os
 import sys
 
-def estimate_compression_rate(frequencies):
+def estimate_compression_rate(frequencies, sequence):
     # Calculate entropy
     entropy = -torch.sum(frequencies * torch.log2(frequencies))
 
-    # The expected code length is typically close to entropy for Huffman coding
-    # For simplicity, we can estimate the compression rate as entropy divided by the number of bits for raw encoding (log2 of the number of symbols)
-    num_symbols = len(frequencies)
-    average_code_length = torch.ceil(entropy)  # This would approximate the average Huffman code length
+    # Count symbol occurrences in the sequence
+    unique, counts = torch.unique(torch.tensor(sequence), return_counts=True)
+    probabilities = counts.float() / counts.sum()
+
+    # Average code length for the sequence
+    average_code_length = -torch.sum(probabilities * torch.log2(frequencies[unique]))
 
     # Compression rate is the ratio of entropy to average code length
-    compression_rate = entropy / torch.log2(torch.tensor(num_symbols, dtype=torch.float32))
+    compression_rate = entropy / average_code_length
     return compression_rate
-
 
 
 if __name__ == '__main__':
@@ -44,4 +45,4 @@ if __name__ == '__main__':
                 print(counts)
                 # print(f'Tensor {t_name} stats\nnnz = {nnz}\n:counts = {counts}\nmean = {torch.mean(counts)}\nvariance = {torch.var(counts)}')
                 if 'q_proj' in tensor_path:
-                    print(f'{os.path.basename(tensor_path)};{nnz};{1 - nnz / (m * n)};{torch.mean(counts):.4f};{torch.var(counts):.4f};{outlier_threshold};{estimate_compression_rate(counts)}')
+                    print(f'{os.path.basename(tensor_path)};{nnz};{1 - nnz / (m * n)};{torch.mean(counts):.4f};{torch.var(counts):.4f};{outlier_threshold};{estimate_compression_rate(counts, W.int())}')
