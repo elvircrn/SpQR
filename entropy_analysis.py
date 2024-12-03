@@ -5,7 +5,7 @@ import sys
 if __name__ == '__main__':
     for p in os.listdir(sys.argv[1]):
         for t in os.listdir(p):
-            t = torch.load(t)
+            t = torch.load(os.path.join(p, t))
             W = t['quant_weights']
             m = W.shape[0]
             n = W.shape[1]
