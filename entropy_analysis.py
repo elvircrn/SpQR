@@ -47,11 +47,6 @@ def huffman_from_frequencies(frequencies):
     return huffman_table
 
 
-def estimate_compression_rate(freq, sequence):
-    freq = {i: f for i, f in enumerate(freq)}
-
-    return huffman_from_frequencies(freq)['compression_ratio']
-
 
 def flatten_tensor(W):
     """
@@ -61,6 +56,31 @@ def flatten_tensor(W):
         return W.flatten()
     else:
         return torch.cat(W).flatten()
+
+
+def calculate_compression_ratio(input_sequence, code_table, input_bits_per_symbol):
+    # Calculate the total bits in the original encoding
+    total_initial_bits = len(input_sequence) * input_bits_per_symbol
+
+    # Calculate the total bits in the compressed encoding
+    total_compressed_bits = sum(len(code_table[symbol]) for symbol in input_sequence)
+
+    # Calculate the compression ratio
+    compression_ratio = total_initial_bits / total_compressed_bits if total_compressed_bits > 0 else float('inf')
+
+    return {
+        "initial_bits": total_initial_bits,
+        "compressed_bits": total_compressed_bits,
+        "compression_ratio": compression_ratio
+    }
+
+
+def estimate_compression_rate(freq, sequence):
+    freq = {i: f for i, f in enumerate(freq)}
+
+    code = huffman_from_frequencies(freq)
+
+    return calculate_compression_ratio(sequence, code, 3)['compression_ratio']
 
 
 if __name__ == '__main__':
