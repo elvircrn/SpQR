@@ -260,6 +260,7 @@ def quantize_sparsity(model, dataloader, args, device, outlier_threshold):
                     torch.save(quantized.save_quant_dict, sublayer_path)
 
                     values, counts = torch.unique(quantized.save_quant_dict['quant_weights'], return_counts=True)
+                    counts = counts.float()
                     print(f'Counts of tensor {sublayer_path}\n:counts = {counts}\nmean = {torch.mean(counts)}\nvariance = {torch.var(counts)}')
 
 
