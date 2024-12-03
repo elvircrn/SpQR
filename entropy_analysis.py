@@ -7,6 +7,7 @@ from dahuffman import HuffmanCodec
 def estimate_compression_rate(sequence):
     data = sequence.tolist()
     codec = HuffmanCodec.from_data(data)
+    codec.print_code_table()
     compressed = codec.encode(data)
     return sequence.shape[0] / len(compressed)
 
