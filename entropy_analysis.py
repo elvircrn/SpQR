@@ -69,7 +69,6 @@ def calculate_compression_ratio(input_sequence, code_table, input_bits_per_symbo
 def estimate_compression_rate(counts, sequence):
     freq = {int(v.item()): f.item() for v, f in zip(*torch.unique(sequence, return_counts=True))}
     code = huffman_from_frequencies(freq)
-    print(f"Huffman Code: {code}")
     return calculate_compression_ratio(sequence, code, 3)["compression_ratio"]
 
 
@@ -96,6 +95,7 @@ if __name__ == "__main__":
 
                 if first:
                     first = False
+                    print("tensor;nnz;sparsity;mean;variance;outlier_threshold;compression_rate")
                 counts = counts.float() / counts.sum()
                 if "q_proj" in tensor_path:
                     print(
