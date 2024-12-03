@@ -69,7 +69,7 @@ def get_average_number_of_bits(
     return round(wbits_avg, 2)
 
 
-def quantize_model(model, args, device):
+def quantize_model(model, args, device, outlier_threshold):
     """main entry point to functions for model quantization"""
     tick = time.time()
     if args.wbits == 16:
@@ -86,7 +86,7 @@ def quantize_model(model, args, device):
             model_path=args.model_path,
             seqlen=model.seqlen,
         )
-        results = quantize_spqr(model, dataloader, args, device)
+        results = quantize_sparsity(model, dataloader, args, device, outlier_threshold)
     print(f"quantization time: {time.time() - tick:.1f}")
     return results
 
@@ -594,4 +594,4 @@ if __name__ == "__main__":
         p = os.path.join(base_path, str(outlier_threshold))
         os.makedirs(p, exist_ok=True)
         args.save = p
-        quantize_sparsity(model, args, device, outlier_threshold)
+        quantize_model(model, args, device, outlier_threshold)
