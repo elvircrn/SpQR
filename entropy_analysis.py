@@ -5,6 +5,7 @@ import sys
 from dahuffman import HuffmanCodec
 
 def estimate_compression_rate(freq, sequence):
+    freq = {f: g for f, g in freq.items()}
     codec = HuffmanCodec.from_frequencies(freq)
     codec.print_code_table()
     return sequence.shape[0]
