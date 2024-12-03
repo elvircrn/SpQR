@@ -80,6 +80,8 @@ def estimate_compression_rate(freq, sequence):
 
     code = huffman_from_frequencies(freq)
 
+    print(f'code = {code}')
+
     return calculate_compression_ratio(sequence, code, 3)['compression_ratio']
 
 
