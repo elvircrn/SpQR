@@ -281,7 +281,7 @@ def quantize_sparsity(model, dataloader, args, device, outlier_threshold):
                         tensor_name = tensor_name.replace('mlp.down_proj', 'D')
                         tensor_name = tensor_name.replace('mlp.up_proj', 'U')
                         tensor_name = tensor_name.replace('mlp.gate_proj', 'G')
-                        file.write(f"{i}.{tensor_name};{(1 - nnz / (m * n)):.4f};{compression_rate};{';'.join(map(lambda x: str(x)[:5], counts.tolist()))}\n")
+                        file.write(f"{'00' if i == 0 else '10'}.{tensor_name};{(1 - nnz / (m * n)):.4f};{compression_rate};{';'.join(map(lambda x: str(x)[:5], counts.tolist()))}\n")
 
 
                 spqr_handlers[sublayer_name].layer.weight.data = quantized.weight.to(
@@ -595,12 +595,9 @@ if __name__ == "__main__":
 
     base_path = args.save
     os.makedirs(base_path, exist_ok=True)
-    up = 0.7
-    down = 0.01
-    steps = 14
-    with open(os.path.join(args.save, 'stats.csv'), 'w') as file:
-        file.write('tensor_name;sparsity;compression;0;1;2;3;4;5;6;7\n')
-
+    up = 1.5
+    down = 0.71
+    steps = 4
     for i in range(steps):
         outlier_threshold = down + ((up - down) / steps) * i
         quantize_model(model, args, device, outlier_threshold)
