@@ -41,7 +41,6 @@ if __name__ == '__main__':
                     first = False
                     print('tensor;nnz;sparsity;mean;variance;outlier_threshold;compression_rate')
                 counts = counts.float() / counts.float().sum()
-                print(counts)
                 # print(f'Tensor {t_name} stats\nnnz = {nnz}\n:counts = {counts}\nmean = {torch.mean(counts)}\nvariance = {torch.var(counts)}')
                 if 'q_proj' in tensor_path:
                     print(f'{os.path.basename(tensor_path)};{nnz};{1 - nnz / (m * n)};{torch.mean(counts):.4f};{torch.var(counts):.4f};{outlier_threshold};{estimate_compression_rate(counts, W.int())}')
