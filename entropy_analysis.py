@@ -33,6 +33,7 @@ if __name__ == '__main__':
                 W = t['quant_weights']
                 m = W.shape[0]
                 n = W.shape[1]
+                print(counts)
                 values, counts = torch.unique(W, return_counts=True)
                 nnz = t["outliers_matrix"].to_sparse_csr().values().shape[0]
 
