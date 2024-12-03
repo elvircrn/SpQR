@@ -280,6 +280,7 @@ def quantize_sparsity(model, dataloader, args, device, outlier_threshold):
                         tensor_name = tensor_name.replace('self_attn.o_proj', 'O')
                         tensor_name = tensor_name.replace('mlp.down_proj', 'D')
                         tensor_name = tensor_name.replace('mlp.up_proj', 'U')
+                        tensor_name = tensor_name.replace('mlp.gate_proj', 'G')
                         file.write(f"{i}.{tensor_name};{(1 - nnz / (m * n)):.4f};{compression_rate};{';'.join(map(lambda x: str(x)[:5], counts.tolist()))}\n")
 
 
