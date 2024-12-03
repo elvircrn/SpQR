@@ -270,7 +270,7 @@ def quantize_sparsity(model, dataloader, args, device, outlier_threshold):
                     counts = counts.float() / counts.float().sum()
                     compression_rate = -3 / torch.dot(torch.sort(-counts.cpu())[0], torch.tensor([2, 2, 3, 3, 4, 4, 4, 4], dtype=torch.float))
                     with open(os.path.join(save, 'stats.csv'), 'a') as file:
-                        file.write(f"{os.path.basename(sublayer_path)};{(1 - nnz / (m * n)):.4f};{compression_rate};{counts.tolist().join(';')}\n")
+                        file.write(f"{os.path.basename(sublayer_path)};{(1 - nnz / (m * n)):.4f};{compression_rate};{counts.tolist().str().join(';')}\n")
                     print(f'Counts of tensor {sublayer_path}\n:counts = {counts}\nmean = {torch.mean(counts)}\nvariance = {torch.var(counts)}')
 
 
