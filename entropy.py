@@ -256,6 +256,7 @@ def quantize_sparsity(model, dataloader, args, device, outlier_threshold):
                     quantized.save_quant_dict["sublayer_name"] = sublayer_name
                     full_path = os.path.join(save, str(i))
                     os.makedirs(full_path, exist_ok=True)
+                    print(f'save = {save}')
                     sublayer_path = os.path.join(full_path, sublayer_name)
 
                     W = quantized.save_quant_dict['quant_weights']
@@ -589,7 +590,4 @@ if __name__ == "__main__":
     steps = 10
     for i in range(steps):
         outlier_threshold = down + ((up - down) / steps) * i
-        p = os.path.join(base_path, f'{outlier_threshold:.4f}')
-        os.makedirs(p, exist_ok=True)
-        args.save = p
         quantize_model(model, args, device, outlier_threshold)
