@@ -5,7 +5,9 @@ import torch
 import torch.nn as nn
 from tqdm import trange
 
+from convert_legacy_model_format import load_legacy_tensor
 from datautils import get_loaders
+from inference_lib.src.spqr_quant.inference import SPQRLegacy, ModelArgs, SparseStorageConfiguration
 from modelutils import (
     FALCON_TYPES,
     find_sublayers,
@@ -258,6 +260,12 @@ def quantize_sparsity(model, dataloader, args, device, outlier_threshold):
                     os.makedirs(full_path, exist_ok=True)
                     sublayer_path = os.path.join(full_path, sublayer_name)
                     torch.save(quantized.save_quant_dict, sublayer_path)
+
+                    legacy_tensor = load_legacy_tensor(sublayer_path, ModelArgs(16, 16, 3, SparseStorageConfiguration.CSR))
+
+                    values, counts = torch.unique(legacy_tensor.W, return_counts=True)
+                    print(f'Counts of tensor {sublayer_path}\n:counts = {counts}\nmean = {torch.mean(counts)}\nvariance = {torch.var(counts)}')
+
 
                 spqr_handlers[sublayer_name].layer.weight.data = quantized.weight.to(
                     spqr_handlers[sublayer_name].layer.weight.data.dtype
