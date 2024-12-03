@@ -67,9 +67,7 @@ def calculate_compression_ratio(input_sequence, code_table, input_bits_per_symbo
 
 
 def estimate_compression_rate(counts, sequence):
-    freq = {int(v.item()): f.item() for v, f in zip(*torch.unique(sequence, return_counts=True))}
-    code = huffman_from_frequencies(freq)
-    return calculate_compression_ratio(sequence, code, 3)["compression_ratio"]
+    return torch.tensor([4, 4, 3, 2, 2, 3, 4, 4]).dot(counts).sum() / 3
 
 
 if __name__ == "__main__":
@@ -98,16 +96,16 @@ if __name__ == "__main__":
                     W = t["quant_weights"]
                     m, n = W.shape[0], W.shape[1]
                     W = flatten_tensor(W)
-                    values, counts = torch.unique(W, return_counts=True)
+                    values, freq = torch.unique(W, return_counts=True)
                     nnz = t["outliers_matrix"].to_sparse_csr().values().shape[0]
 
                     if first:
                         first = False
                         print("tensor;nnz;sparsity;mean;variance;outlier_threshold;compression_rate")
-                    counts = counts.float() / counts.sum()
+                    freq = freq.float() / freq.sum()
                     if matrix in tensor_path:
                         print(
                             f"{os.path.basename(tensor_path)};{nnz};{1 - nnz / (m * n):.6f};"
-                            f"{torch.mean(counts):.4f};{torch.var(counts):.4f};{outlier_threshold};"
-                            f"{estimate_compression_rate(counts, W.int())}"
+                            f"{torch.mean(freq):.4f};{torch.var(freq):.4f};{outlier_threshold};"
+                            f"{estimate_compression_rate(freq, W.int())}"
                         )

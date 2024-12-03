@@ -185,7 +185,7 @@ def quantize_sparsity(model, dataloader, args, device, outlier_threshold):
     normal_outlier_count_global, w_count_global = 0, 0
 
     layers = get_layers(model)
-    for i in range(1):
+    for i in [10]:
         print(f"\n---------------- Layer {i} of {len(layers)} ----------------")
         normal_outlier_count, w_count = 0, 0
         stats_payload = {}
@@ -257,10 +257,12 @@ def quantize_sparsity(model, dataloader, args, device, outlier_threshold):
                     full_path = os.path.join(save, str(i))
                     os.makedirs(full_path, exist_ok=True)
                     sublayer_path = os.path.join(full_path, sublayer_name)
-                    torch.save(quantized.save_quant_dict, sublayer_path)
-
+                    torch.save(quantized.save_quant_dict['quant_weights'], sublayer_path)
                     values, counts = torch.unique(quantized.save_quant_dict['quant_weights'], return_counts=True)
                     counts = counts.float() / counts.float().sum()
+                    file.write(f'')
+                    with open('stats.csv', 'a') as file:
+                        file.write(f'{counts.join(';')}')
                     print(f'Counts of tensor {sublayer_path}\n:counts = {counts}\nmean = {torch.mean(counts)}\nvariance = {torch.var(counts)}')
 
 
