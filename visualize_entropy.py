@@ -1,8 +1,7 @@
 import pandas as pd
-import plotly.express as px
 from io import StringIO
-import plotly.graph_objects as go
 
+import plotly.graph_objects as go
 
 # Table string
 table_string = """
@@ -207,21 +206,33 @@ tensor_name;sparsity;compression;0;1;2;3;4;5;6;7
 
 # Load the data from the string
 data = pd.read_csv(StringIO(table_string), sep=';')
-fig = go.Figure()
 
-# Create the plot
-fig.add_trace(go.Scatter(
-    data,
-    x='sparsity',
-    y='compression',
-    color='tensor_name',
-    title='Variance vs Sparsity at Layer 0',
-    mode='lines+markers',
-    labels={'sparsity': 'Sparsity', 'compression': 'Compression'}))
-
-
+data['sparsity'] = pd.to_numeric(data['sparsity'], errors='coerce')
 
 if __name__ == '__main__':
+    # Create a figure
+    fig = go.Figure()
+
+    # Add a trace for each tensor
+    for tensor in data['tensor_name'].unique():
+        tensor_data = data[data['tensor_name'] == tensor]
+        fig.add_trace(
+            go.Scatter(
+                x=tensor_data['sparsity'],
+                y=tensor_data['compression'],
+                mode='lines+markers',
+                name=tensor
+            )
+        )
+
+    # Update layout
+    fig.update_layout(
+        title='Compression Rate vs Sparsity for Each Tensor',
+        xaxis_title='Sparsity',
+        yaxis_title='Compression Rate'
+    )
+
+    # Show the plot
     fig.show()
 
 
