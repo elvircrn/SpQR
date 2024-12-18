@@ -75,53 +75,9 @@ template <class Bit_t, uint64_t BITS> struct BitArray {
 template <class Bit_t> struct _BitArray {
   Bit_t *w{};
   const int bits;
-  Bit_t *out;
-  int local_id{};
-  int addr_per_block;
 
-  _BitArray(Bit_t *w, int bits) : w(w), bits(bits), out(nullptr), local_id{} {
-    constexpr unsigned BYTE = 8u;
-    constexpr unsigned BITS_PER_ADDR = sizeof(Bit_t) * BYTE;
-    addr_per_block = BITS_PER_ADDR / bits;
-  }
+  _BitArray(Bit_t *w, int bits) : w(w), bits(bits) { }
 
-  __host__ __device__ Bit_t operator[](int w_id) {
-    // TODO: NOTE: PERF: Make this decode faster!
-    int addr = (w_id / 18);
-    return (w[addr] >> ((w_id % 18ull) * bits)) & ((1ull << bits) - 1ull);
-  }
-
-  [[maybe_unused]] int sanity{};
-
-  __device__ __host__ void push_back(Bit_t x) {
-    if (out == nullptr) {
-      out = w;
-    }
-    (*out) |= (x << (local_id * bits));
-    if (local_id == addr_per_block - 1) {
-      *(++out) = 0;
-      local_id = 0;
-      sanity++;
-    } else {
-      local_id++;
-    }
-  }
-
-  __device__ __host__ void pad(int times) {
-    // Move to the next block if necessary
-    for (int i = 0; i < times; i++) {
-      *(++out) = 0;
-      sanity++;
-    }
-    local_id = 0;
-  }
-
-  __device__ __host__ void pad_maybe() {
-    // Move to the next block if necessary
-    if (local_id != 0) {
-      pad(1);
-    }
-  }
 };
 
 union ColVal {

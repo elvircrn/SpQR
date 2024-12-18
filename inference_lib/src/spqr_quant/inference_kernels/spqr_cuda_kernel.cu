@@ -633,10 +633,8 @@ __device__ __forceinline__ Vec<float, K>
 accumulate_batched_lut(Vec<float, K> acc, u64 b, const half2 &ws2,
                        const half2 &wz2, const half2 *__restrict__ s_x2,
                        const half2 *__restrict__ lut) {
-  b >>= 6u;
 #pragma unroll
   for (u32 i = 0; i < 4; i++) {
-    //    auto frag = dequant(b);
     Frag4 frag{lut[b & 0b111111u], lut[(b & 0b111111000000) >> 6]};
 
 #pragma unroll
@@ -741,8 +739,9 @@ template <class W_t, int X_LOAD_BLOCK_SIZE, int BLOCK_HEIGHT, int BLOCK_WIDTH,
           int BETA1, int BETA2, int NUM_SPQR_TILES_PER_ITERATION, int K,
           int page_size_fp32>
 struct DenseMatrixRunnerBatched {
-  const W_t *__restrict local_raw_data;
+  const u32 *__restrict__ local_raw_data;
   u32 thread_xy;
+  u32 m;
   u32 n;
   const half2 *__restrict__ x2;
   half2 *__restrict__ s_x2;
@@ -754,6 +753,50 @@ struct DenseMatrixRunnerBatched {
   u32 global_x_fp128_loaded_base_id;
   u32 global_computed_tile{};
   u32 pipeline_id;
+
+#if 0
+  using Load_t = uint32_t;
+#else
+  using Load_t = __int128_t;
+#endif
+
+  // Predicated asynchronous global->shared copy; used for inputs A where we
+  // apply predication to handle batchsizes that are not multiples of 16.
+  __device__ inline void
+  cp_async4_pred(Load_t *smem_ptr, const Load_t *glob_ptr, bool pred = true) {
+    const int BYTES = 16;
+    uint32_t smem = static_cast<uint32_t>(__cvta_generic_to_shared(smem_ptr));
+    asm volatile("{\n"
+                 "   .reg .pred p;\n"
+                 "   setp.ne.b32 p, %0, 0;\n"
+                 "   @p cp.async.cg.shared.global [%1], [%2], %3;\n"
+                 "}\n" ::"r"((int)pred),
+                 "r"(smem), "l"(glob_ptr), "n"(BYTES));
+  }
+
+  template <int BitCount>
+  static DEVICE_INLINE void cp_async(Load_t *__restrict__ dst,
+                                     const Load_t *__restrict__ src) {
+    u32 s_dst = u32(__cvta_generic_to_shared(dst));
+    if constexpr (BitCount == 128) {
+      asm volatile(
+          "{\n"
+          "   .reg .b64 p;\n"
+          "   createpolicy.fractional.L2::evict_first.b64 p, 0.5;"
+          "   cp.async.cg.shared.global.L2::cache_hint [%0], [%1], %2, p;\n"
+          "}\n" ::"r"(s_dst),
+          "l"(src), "n"(16));
+    } else if constexpr (BitCount == 128) {
+      asm volatile("cp.async.cg.shared.global [%0], [%1], 16;\n" ::"r"(s_dst),
+                   "l"(src));
+    } else if constexpr (BitCount == 64) {
+      asm volatile("cp.async.ca.shared.global [%0], [%1], 8;\n" ::"r"(s_dst),
+                   "l"(src));
+    } else if constexpr (BitCount == 32) {
+      asm volatile("cp.async.ca.shared.global [%0], [%1], 4;\n" ::"r"(s_dst),
+                   "l"(src));
+    }
+  }
 
   DEVICE_INLINE void init() {
     global_x_fp128_loaded_base_id = 0;
@@ -829,6 +872,7 @@ struct DenseMatrixRunnerBatched {
     auto s_x128 = reinterpret_cast<Load_t *>(s_x2);
     const auto x128 = reinterpret_cast<const Load_t *>(x2);
 
+#pragma unroll
     for (int i = thread_xy;
          local_x_fp128_loaded_base_id + i < page_size_fp32 / 4 &&
          global_x_fp128_loaded_base_id + i < K * n / 8;
@@ -842,34 +886,42 @@ struct DenseMatrixRunnerBatched {
     unsigned int upper_limit_fp16 =
         min((pipeline_id + 1) * page_size_fp32 * 2, n * K);
 
+    auto dense_half_offset = UPDIV(m, BETA1) * UPDIV(n, BETA1) * BETA1;
+
+    u32 v0{}, v1{};
     {
       uint64_t v{};
-      bool p = global_computed_tile + thread_xy * K / 2 < upper_limit_fp16;
+      bool compute_p =
+          global_computed_tile + thread_xy * K / 2 < upper_limit_fp16;
       bool global_p = global_computed_tile < upper_limit_fp16;
 
-      if (p) {
-        v = __ldcs(local_raw_data);
+      if (compute_p) {
+        v0 = __ldcs(local_raw_data);
       }
 
-      uint64_t s_order_partial = (v >> NUM_USEFUL_BITS) << SHIFT;
+      uint64_t s_order_partial = uint64_t(v0 & 0b11111111u) << SHIFT;
 
       SecondOrder _s{.v = recover_second_order_sync(s_order_partial)};
 
       half2 ws2, wz2;
-      if (p) {
-        half2 first_order_quantized = dequant2(v);
+      if (compute_p) {
+        half2 first_order_quantized = dequant2(v0 >> 8);
 
         half2 first_order_dequantized =
             dequantize2(first_order_quantized, _s.get_sws2(), _s.get_swz2());
 
         ws2 = __half2half2(first_order_dequantized.x);
         wz2 = __half2half2(first_order_dequantized.y);
+
+        v1 = __ldcs(local_raw_data + dense_half_offset);
       }
 
       cp_async_wait_all();
       __syncthreads();
 
-      if (p) {
+      v = ((uint64_t(v1) << 32ull) | uint64_t(v0)) >> 14ull;
+
+      if (compute_p) {
         accs = accumulate_batched_lut<K>(accs, v, ws2, wz2, s_x2_compute, lut);
       }
 
@@ -884,20 +936,20 @@ struct DenseMatrixRunnerBatched {
 
     for (;;) {
       uint64_t v{};
-      bool p = global_computed_tile + thread_xy * K / 2 < upper_limit_fp16;
-      bool global_p = global_computed_tile < upper_limit_fp16;
+      bool compute_p =
+          global_computed_tile + thread_xy * K / 2 < upper_limit_fp16;
+      bool global_compute_p = global_computed_tile < upper_limit_fp16;
 
-      if (p) {
-        v = __ldcs(local_raw_data);
+      if (compute_p) {
+        v0 = __ldcs(local_raw_data);
       }
 
-      uint64_t s_order_partial = (v >> NUM_USEFUL_BITS) << SHIFT;
+      uint64_t s_order_partial = uint64_t(v0 & 0b11111111) << SHIFT;
 
-      __syncthreads();
       SecondOrder _s{.v = recover_second_order_sync(s_order_partial)};
 
-      if (p) {
-        half2 first_order_quantized = dequant2(v);
+      if (compute_p) {
+        half2 first_order_quantized = dequant2((v0 >> 8u) & 0b111111u);
 
         half2 first_order_dequantized =
             dequantize2(first_order_quantized, _s.get_sws2(), _s.get_swz2());
@@ -905,10 +957,13 @@ struct DenseMatrixRunnerBatched {
         half2 ws2 = __half2half2(first_order_dequantized.x);
         half2 wz2 = __half2half2(first_order_dequantized.y);
 
+        v1 = __ldcs(local_raw_data + dense_half_offset);
+
+        v = ((uint64_t(v1) << 32ull) | uint64_t(v0)) >> 14ull;
         accs = accumulate_batched_lut<K>(accs, v, ws2, wz2, s_x2_compute, lut);
       }
 
-      if (!global_p) {
+      if (!global_compute_p) {
         break;
       }
 
@@ -965,8 +1020,8 @@ __global__ void spqr_quantized_matvec(
 
   // Here is how we organize things here. We have THREAD_COUNT threads in a
   // block in x-dimension. We distribute 1 thread per tile row. Therefore, we
-  // have BETA1 threads per tile. For now, a block only spans across 1 dimension
-  // of SPQR tiles.
+  // have BETA1 threads per tile. For now, a block only spans across 1
+  // dimension of SPQR tiles.
   constexpr u32 NUM_SPQR_TILES_PER_ITERATION = BLOCK_WIDTH;
   constexpr u32 WARP_COUNT = UPDIV(BLOCK_WIDTH, 2);
 
@@ -1085,7 +1140,7 @@ __global__ void spqr_quantized_matvec_batched_v2(
     // W and meta
     u32 m, u32 n,
     // W 1st order stats
-    const W_t *__restrict__ dense_matrix, const half *__restrict__ x,
+    const uint32_t *__restrict__ dense_matrix, const half *__restrict__ x,
     // Outliers
     const int *__restrict__ row_offsets, const u32 *__restrict__ col_vals,
     // Output
@@ -1126,8 +1181,8 @@ __global__ void spqr_quantized_matvec_batched_v2(
 
   // Here is how we organize things here. We have THREAD_COUNT threads in a
   // block in x-dimension. We distribute 1 thread per tile row. Therefore, we
-  // have BETA1 threads per tile. For now, a block only spans across 1 dimension
-  // of SPQR tiles.
+  // have BETA1 threads per tile. For now, a block only spans across 1
+  // dimension of SPQR tiles.
   constexpr u32 NUM_SPQR_TILES_PER_ITERATION = BLOCK_WIDTH;
   constexpr u32 WARP_COUNT = UPDIV(BLOCK_WIDTH, 2);
 
@@ -1172,6 +1227,7 @@ __global__ void spqr_quantized_matvec_batched_v2(
                            K, page_size_fp32>
       dense_matrix_runner{.local_raw_data = dense_matrix + raw_data_offset,
                           .thread_xy = thread_xy,
+                          .m = m,
                           .n = n,
                           .x2 = x2,
                           .s_x2 = s_x2,
@@ -1490,7 +1546,7 @@ int spqr_matvec(
   }
 
 #define F                                                                      \
-  const auto *raw_data_ptr = (const u64 *)raw_dense_data;                      \
+  const auto *raw_data_ptr = (const u32 *)raw_dense_data;                      \
   const half *X_ptr = (const half *)X;                                         \
   const int *row_offsets_ptr = (const int *)row_offsets;                       \
   half *y_ptr = (half *)y;                                                     \

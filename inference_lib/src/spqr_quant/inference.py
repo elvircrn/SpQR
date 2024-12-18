@@ -22,7 +22,7 @@ from .inference_kernels.cuda_kernel import (
     call_dequantize_compressed,
     call_spqr_mul,
     call_spqr_mul_fused,
-    call_tensor_compress_interleaved, call_spqr_mul_batched,
+    call_tensor_compress_interleaved, call_spqr_mul_batched, call_split_dense_weights,
 )
 from .sparse_util import init_ptcsr, merge_col_val
 
@@ -150,6 +150,11 @@ class QuantizedLinear(torch.nn.Module):
         return torch.zeros(sz0, dtype=torch.int64, device=device)
 
     @staticmethod
+    def _allocate_weight_buffer_split(m, n, beta1, beta2, device) -> torch.Tensor:
+        sz0 = QuantizedLinear._calculate_weight_buffer_size(m, n, beta1, beta2)
+        return torch.zeros(sz0 * 2, dtype=torch.int32, device=device)
+
+    @staticmethod
     def from_legacy(spqr_legacy: SPQRLegacy, model_args: ModelArgs, device):
         """
         Converts the int8 legacy format storage into it's compressed counterpart.
@@ -159,6 +164,9 @@ class QuantizedLinear(torch.nn.Module):
         @return: Fully compressed SpQR tensor.
         """
         dense_weights = QuantizedLinear._allocate_weight_buffer(
+            spqr_legacy.m, spqr_legacy.n, model_args.beta1, model_args.beta2, "cpu"
+        )
+        dense_weights_split = QuantizedLinear._allocate_weight_buffer_split(
             spqr_legacy.m, spqr_legacy.n, model_args.beta1, model_args.beta2, "cpu"
         )
 
@@ -190,6 +198,9 @@ class QuantizedLinear(torch.nn.Module):
             0 if model_args.sparse_compression == SparseStorageConfiguration.CSR else 1,
             dense_weights,
         )
+
+        call_split_dense_weights(dense_weights, dense_weights_split)
+        dense_weights = dense_weights_split
 
         def pack_uint16_to_uint32(tensor: torch.Tensor) -> torch.Tensor:
             """

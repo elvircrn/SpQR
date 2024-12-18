@@ -47,7 +47,12 @@ torch.library.define(
     "spqr_cuda::spqr_mul_fused",
     "(int m, int n, int bits, int beta1, int beta2, Tensor in_perm, Tensor dense_weights, Tensor row_offsets, Tensor col_vals, int nnz, Tensor x, int f, Tensor Y, Tensor(Y!) out) -> ()",
 )
+torch.library.define(
+    "spqr_cuda::split_dense_weights",
+    "(Tensor dense_weights_in, Tensor dense_weights_out) -> ()",
+)
 
+torch.library.impl("spqr_cuda::split_dense_weights", "default", SPQR_CUDA.split_dense_weights)
 torch.library.impl("spqr_cuda::torch_mul_timer", "default", SPQR_CUDA.torch_mul_timer)
 torch.library.impl("spqr_cuda::torch_mul_timer_batched", "default", SPQR_CUDA.torch_mul_timer_batched)
 torch.library.impl("spqr_cuda::tensor_compress_interleaved", "default", SPQR_CUDA.tensor_compress_interleaved)
@@ -87,6 +92,10 @@ def call_tensor_compress_interleaved(*args):
     return torch.ops.spqr_cuda.tensor_compress_interleaved(*args)
 
 
+def call_split_dense_weights(*args):
+    return torch.ops.spqr_cuda.split_dense_weights(*args)
+
+
 def call_dequantize_compressed(*args):
     return torch.ops.spqr_cuda.dequantize_compressed(*args)
 
@@ -116,4 +125,9 @@ def spqr_mul_fused_meta(m, n, bits, beta1, beta2, in_perm, dense_weights, row_of
 
 @torch.library.register_fake("spqr_cuda::spqr_mul_batched")
 def spqr_mul_batched_meta(m, n, k, bits, beta1, beta2, dense_weights, row_offsets, col_vals, nnz, x, f, Y, out):
+    return
+
+
+@torch.library.register_fake("spqr_cuda::split_dense_weights")
+def spqr_mul_batched_meta(dense_weights_in, dense_weights_out):
     return
